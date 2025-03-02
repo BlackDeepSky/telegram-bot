@@ -44,7 +44,6 @@ async def send_news():
 
 # Функция для запуска бота
 async def main():
-    dp.include_router(dp)
     await asyncio.gather(
         dp.start_polling(bot),
         send_news()
