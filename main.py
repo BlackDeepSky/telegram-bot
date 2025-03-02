@@ -4,14 +4,14 @@ from aiogram.types import Message
 from config import BOT_TOKEN
 from news_parser import get_news
 import asyncio
-from aiogram.utils.exceptions import RetryAfter
+from aiogram.exceptions import TelegramAPIError  # Используем общее исключение
+
+# Список пользователей, которым будут отправляться новости
+USER_IDS = [1985969754]  # Замените на ID вашего Telegram аккаунта
 
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
-
-# Список пользователей, которым будут отправляться новости
-USER_IDS = [1985969754]  # Замените на ID вашего Telegram аккаунта
 
 # Обработчик команды /start
 @dp.message()
@@ -28,9 +28,13 @@ async def send_news():
                     message = f"✨ *{news['category']}*\n\n{news['title']}\n{news['url']}"
                     try:
                         await bot.send_message(user_id, message, parse_mode="Markdown")
-                    except RetryAfter as e:
-                        print(f" Flood limit exceeded. Sleep {e.timeout} seconds.")
-                        await asyncio.sleep(e.timeout)
+                    except TelegramAPIError as e:
+                        if "FLOOD_WAIT" in str(e):
+                            wait_time = int(str(e).split("FLOOD_WAIT_")[-1])  # Извлекаем время ожидания
+                            print(f"Flood limit exceeded. Sleep {wait_time} seconds.")
+                            await asyncio.sleep(wait_time)
+                        else:
+                            print(f"Telegram API error: {e}")
                     except Exception as ex:
                         print(f"Error sending news to user {user_id}: {ex}")
             await asyncio.sleep(3600)  # Ждём 1 час
@@ -40,7 +44,6 @@ async def send_news():
 
 # Функция для запуска бота
 async def main():
-    dp.include_router(dp)
     await asyncio.gather(
         dp.start_polling(bot),
         send_news()
