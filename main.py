@@ -4,7 +4,7 @@ from aiogram.types import Message
 from config import BOT_TOKEN
 from news_parser import get_news
 import asyncio
-from aiogram.utils.exceptions import RetryAfter
+from aiogram.exceptions import RetryAfter
 
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
